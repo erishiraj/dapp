@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import Web3 from 'web3';
 import './App.css';
-
+import detectEthereumProvider from '@metamask/detect-provider';
 function App() {
-  const [web3Api, setweb3Api] = useState({
+  const [web3Api, setWeb3Api] = useState({
     provider: null,
     web3: null,
   });
@@ -19,20 +19,27 @@ function App() {
   }, [web3Api.web3]);
   useEffect(() => {
     const loadProvider = async () => {
-      let provider;
-      if (window.ethereum) {
-        provider = window.ethereum;
-      } else if (window.web3) {
-        provider = window.web3;
-      } else if (!process.env.production) {
-        provider = new Web3.providers.HttpProvider('HTTP://127.0.0.1:7545');
+      let provider = await detectEthereumProvider();
+      if (provider) {
+        await provider.request({
+          method: 'eth_requestAccounts',
+        });
+        setWeb3Api({ web3: new Web3(provider), provider });
+      } else {
+        console.error('Please install MetaMask!');
       }
-      try {
-        await provider.enable();
-      } catch (error) {
-        console.log('User is not allowed!');
-      }
-      setweb3Api({ web3: new Web3(provider), provider: provider });
+      // if (window.ethereum) {
+      //   provider = window.ethereum;
+      // } else if (window.web3) {
+      //   provider = window.web3;
+      // } else if (!process.env.production) {
+      //   provider = new Web3.providers.HttpProvider('HTTP://127.0.0.1:7545');
+      // }
+      // try {
+      //   await provider.enable();
+      // } catch (error) {
+      //   console.log('User is not allowed!');
+      // }
     };
 
     loadProvider();

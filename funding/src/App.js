@@ -1,15 +1,43 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import Web3 from 'web3';
 import './App.css';
 
 function App() {
+  const [web3Api, setweb3Api] = useState({
+    provider: null,
+    web3: null,
+  });
+
+  const [account, setAccount] = useState(null);
+
   useEffect(() => {
-    const loadProvider = () => {
-      console.log(window.web3);
-      console.log(window.ethereum);
+    const getAccount = async () => {
+      const account = await web3Api.web3.eth.getAccounts();
+      setAccount(account[0]);
     };
+    web3Api.web3 && getAccount();
+  }, [web3Api.web3]);
+  useEffect(() => {
+    const loadProvider = async () => {
+      let provider;
+      if (window.ethereum) {
+        provider = window.ethereum;
+      } else if (window.web3) {
+        provider = window.web3;
+      } else if (!process.env.production) {
+        provider = new Web3.providers.HttpProvider('HTTP://127.0.0.1:7545');
+      }
+      try {
+        await provider.enable();
+      } catch (error) {
+        console.log('User is not allowed!');
+      }
+      setweb3Api({ web3: new Web3(provider), provider: provider });
+    };
+
     loadProvider();
   }, []);
-
+  console.log(web3Api.web3, account);
   const onConnectMetamask = async () => {
     const account = await window.ethereum.request({
       method: 'eth_requestAccounts',
@@ -22,7 +50,9 @@ function App() {
       <div className='card-header'>Funding</div>
       <div className='card-body'>
         <h5 className='card-title'>Balance: 20 ETH</h5>
-        <p className='card-text'>Account: 0xou934b359345b534b98543549</p>
+        <p className='card-text'>
+          Account: {account ? account : 'not connected!'}
+        </p>
         <button
           type='button'
           className='btn btn-success'
